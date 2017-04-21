@@ -17,11 +17,10 @@ public class App {
     public static Map<Integer, Node> tempMap = new HashMap<Integer, Node>();
     public static Map<Integer, Node> nodeMap = new HashMap<Integer, Node>();        //Stores my neighbors
 
-    public static Integer minPerActive = 0;
-    public static Integer maxPerActive = 0;
-    public static Integer minSendDelay = 0;
-    public static Integer snapshotDelay = 0;
-    public static Integer maxNumberMsgs = 0;
+    public static Integer meanInterReqDelay = 0;
+    public static Integer meanCSExecTime = 0;
+    public static Integer noRequestGenerated = 0;
+   
     //Store marker message is sent or not for a relevant snapshot ID
     public static volatile TreeMap<Integer, Boolean> markerMessageSent = new TreeMap<Integer, Boolean>();
     //Store which node has sent "it is passive now" message to node 0
@@ -79,16 +78,14 @@ public class App {
                         //get stuff for BS
                         String[] info = line.split("\\s+");
                         totalNodes = Integer.parseInt(info[0]);
-                        minPerActive = Integer.parseInt(info[1]);
-                        maxPerActive = Integer.parseInt(info[2]);
-                        minSendDelay = Integer.parseInt(info[3]);
-                        snapshotDelay = Integer.parseInt(info[4]);
-                        maxNumberMsgs = Integer.parseInt(info[5]);
-                        System.out.println("Read 1st line : " + totalNodes + " " + minPerActive + " " + maxPerActive + " " + minSendDelay + " " + snapshotDelay + " " + maxNumberMsgs);
+                        meanInterReqDelay = Integer.parseInt(info[1]);
+                        meanCSExecTime = Integer.parseInt(info[2]);
+                        noRequestGenerated = Integer.parseInt(info[3]);
+                       
+                        System.out.println("Read 1st line : " + totalNodes + " " + meanInterReqDelay + " " + meanCSExecTime + " " + noRequestGenerated);
                         //ignore first line
                         lineCount++;
                         linesToRead = totalNodes;      //Remembering the number of lines to read,say, N
-                        //lines = new boolean[linesToRead];
                         continue;
                     } else if (lineCount > 0) {
                         if (lineCount <= linesToRead) {
@@ -99,7 +96,6 @@ public class App {
                                 Node node = new Node();
                                 node.setNodeId(Integer.parseInt(sysInfo[0]));
                                 node.setNodeAddr(sysInfo[1]);        //for local system
-                                // node.setNodeAddr(sysInfo[1]+".utdallas.edu");
                                 node.setPort(Integer.parseInt(sysInfo[2]));
                                 if (node.getNodeAddr().equals(hostName)) {      //identifying if the node is itself, then storing it in SELF.
                                     self = node;
@@ -108,36 +104,8 @@ public class App {
                                 lineCount++;
                             }
                             continue;
-                        } else if (lineCount > linesToRead) {  //Compute my neighbors
-                            String[] neighbors = line.split("\\s+");
-                            System.out.println("<><><><><><><><>" + line);
-
-                            //Assuming node 0 to be initially active, setting state to active.
-                            if (self.getNodeId() == 0) {
-                                isProcessActive = true;
-                            }
-
-                            if (self.getNodeId() == counter) {    //if 1st identifier is me ,then get my neighbors and add to nodeMap
-                                for (int i = 0; i < neighbors.length; i++) {
-                                    nodeMap.put(Integer.parseInt(neighbors[i]), tempMap.get(Integer.parseInt(neighbors[i])));
-                                    System.out.println(">>>>" + neighbors[i] + ">>>" + tempMap.get(Integer.parseInt(neighbors[i])).getNodeId());
-                                }
-                            }
-                            /*else {
-                                for (int i = 0; i < neighbors.length; i++) {
-                                    if(self.getNodeId() == Integer.parseInt(neighbors[i])) {
-                                        nodeMap.put(counter, tempMap.get(counter));
-                                        System.out.println(">>>>" + neighbors[i] + ">>>" + tempMap.get(Integer.parseInt(neighbors[i])).getNodeId());
-                                        break;
-                                    }
-                                }
-                            }*/
-                            counter++;        //placeholder for source node 0 123 and 1 04 and so on, since the source is missing from the lines.
-                            lineCount++;
                         }
                     }
-
-
                 } else {
                     //line doesn't start with numeric value, ignored!
                     continue;
