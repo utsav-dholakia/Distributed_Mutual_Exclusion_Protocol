@@ -11,8 +11,8 @@ public class App {
     public static Integer meanInterReqDelay = 0;
     public static Integer meanCSExecTime = 0;
     public static Integer noRequestGenerated = 0;
-   
-    public static Integer clock = 0;
+    public static PriorityQueue<RequestObject> queue;
+    public static Integer scalarClock = 0;
 
     public static void main(String args[]) {
         String line = null;
@@ -95,5 +95,18 @@ public class App {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        queue = new PriorityQueue<RequestObject>(totalNodes, new Comparator<RequestObject> (){
+            public int compare(RequestObject lhs, RequestObject rhs) {
+                if(lhs.getTimeStamp() < rhs.getTimeStamp()){
+                    return +1;
+                }
+                else if (lhs.getTimeStamp() == rhs.getTimeStamp()){
+                    return 0;
+                }
+                else {
+                    return -1;
+                }
+            }
+        });
     }
 }
