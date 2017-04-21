@@ -8,9 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Created by utsavdholakia on 3/11/17.
- */
 public class App {
     public static Integer totalNodes;   //Total nodes in topology
     public static Node self;
@@ -21,20 +18,7 @@ public class App {
     public static Integer meanCSExecTime = 0;
     public static Integer noRequestGenerated = 0;
    
-    //Store marker message is sent or not for a relevant snapshot ID
-    public static volatile TreeMap<Integer, Boolean> markerMessageSent = new TreeMap<Integer, Boolean>();
-    //Store which node has sent "it is passive now" message to node 0
-    public static volatile Set<Integer> nodesPassive = new HashSet<Integer>();
-    //Local vector clock of the node
-    public static volatile Vector<Integer> vectorClock;
-    //Store channelStates for different snapshots : for snapshot no. 0, store clock value of each node in the map(<Node ID, Vector Clock value>)
-    public static volatile List<TreeMap<Integer, Integer>> channelStates = new ArrayList<TreeMap<Integer, Integer>>();
-    public static volatile boolean isProcessActive = false;        //tells the current process state - active/passive
-    public static volatile boolean mapProtocolTerminationFlag = false;    //keeps track of Map protocol termination condition
-    public static volatile int sentMsgCount = 0;        //keeps track of all the sent messages over all active intervals
-    public static volatile boolean stopMapProtocolsMessageSent = false;  //Used by node 0 to indicate it has sent stop map protocol message to everyone
-    public static volatile Integer maxSnapshotID = 0;    //Used to check what is the max number of snapshot initiated by node 0, stop server after that
-    public static volatile Integer snapshotNumber = 0;   //Used by node 0 to assign snapshotID to each snapshot
+    public static Integer clock = 0;
 
     public static void main(String args[]) {
         String line = null;
