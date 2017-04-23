@@ -19,7 +19,7 @@ public class App {
     public static Integer meanInterReqDelay = 0;
     public static Integer meanCSExecTime = 0;
     public static Integer countOfRequestsAllowed = 0;
-    public static PriorityQueue<RequestObject> queue;
+    public static PriorityQueue<RequestObject> requestQueue;
     public static Integer scalarClock = 0;
 
     public static void main(String args[]) {
@@ -103,7 +103,7 @@ public class App {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        queue = new PriorityQueue<RequestObject>(totalNodes, new Comparator<RequestObject> (){
+        requestQueue = new PriorityQueue<RequestObject>(totalNodes, new Comparator<RequestObject> (){
             public int compare(RequestObject lhs, RequestObject rhs) {
                 //Compare clock value and sort requestObjects accordingly
                 int comparedValue = lhs.getTimeStamp().compareTo(rhs.getTimeStamp());
