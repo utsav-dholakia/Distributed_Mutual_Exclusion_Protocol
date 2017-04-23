@@ -39,11 +39,16 @@ public class LamportMutex {
         replyPending.remove(CriticalSection.self.getNodeId());
         //end initialization of reply monitor
 
+        //Critical section entry request sent
         CriticalSection.isRequestSent = true;
+        //Scalar clock update
         scalarClock++;
-        Message request = new Message(MessageType.Request,CriticalSection.self.getNodeId(),scalarClock);
-        messagesToBeProcessed.add(request);
+        //Add my request to request queue
+        RequestObject requestObject = new RequestObject(scalarClock, CriticalSection.self.getNodeId());
+        requestQueue.add(requestObject);
 
+        //Send request message to all nodes
+        Message request = new Message(MessageType.Request,CriticalSection.self.getNodeId(),scalarClock);
         Iterator<Integer> iterator = CriticalSection.nodeMap.keySet().iterator();
         try{
             while (iterator.hasNext()) {
@@ -69,13 +74,15 @@ public class LamportMutex {
 
 
     public static void csExit(){
+        //Mark isExecutingCS as false,
         isExecutingCS = false;
-        //Execute critical section exit logic
+        //Critical section entry request is not sent
+        CriticalSection.isRequestSent = false;
+        //Send release message to all nodes
         sendReleaseMessage();
     }
 
     public static void sendReleaseMessage() {
-        CriticalSection.isRequestSent = false;
         //Increment clock value
         LamportMutex.scalarClock = LamportMutex.scalarClock + 1;
         //Generate release message

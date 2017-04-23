@@ -135,6 +135,16 @@ public class CriticalSection {
             e.printStackTrace();
         }
 
+        //Listener(Server) class initiated
+        Listener listener = new Listener(self.getPort());
+        Thread listenerThread = new Thread(listener, "Listener Thread");
+        listenerThread.start();
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
 
     }
