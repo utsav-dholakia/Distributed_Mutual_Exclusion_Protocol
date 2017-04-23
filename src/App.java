@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.InetAddress;
 import java.util.*;
+import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -11,13 +12,13 @@ public class App {
     public static Map<Integer, Node> nodeMap = new HashMap<Integer, Node>();        //Stores all nodes
     public static BlockingQueue<Message> messagesToBeProcessed = new LinkedBlockingQueue<Message>();
 
-    public static BlockingQueue<Integer> replyPending = new LinkedBlockingQueue<Integer>();		//store list of pending nodes from which reply hasnt been received
+    public static List<Integer> replyPending;		//store list of pending nodes from which reply hasnt been received
     public static boolean isRequestSent = false;		// keeps track whether current process has sent a request or not
     public static Integer countRequestsSent = 0;
     
     public static Integer meanInterReqDelay = 0;
     public static Integer meanCSExecTime = 0;
-    public static Integer noRequestGenerated = 0;
+    public static Integer countOfRequestsAllowed = 0;
     public static PriorityQueue<RequestObject> queue;
     public static Integer scalarClock = 0;
 
@@ -65,9 +66,9 @@ public class App {
                         totalNodes = Integer.parseInt(info[0]);
                         meanInterReqDelay = Integer.parseInt(info[1]);
                         meanCSExecTime = Integer.parseInt(info[2]);
-                        noRequestGenerated = Integer.parseInt(info[3]);
+                        countOfRequestsAllowed = Integer.parseInt(info[3]);
                        
-                        System.out.println("Read 1st line : " + totalNodes + " " + meanInterReqDelay + " " + meanCSExecTime + " " + noRequestGenerated);
+                        System.out.println("Read 1st line : " + totalNodes + " " + meanInterReqDelay + " " + meanCSExecTime + " " + countOfRequestsAllowed);
                         //ignore first line
                         lineCount++;
                         linesToRead = totalNodes;      //Remembering the number of lines to read,say, N
@@ -116,7 +117,14 @@ public class App {
             }
         });
         
-        while(countRequestsSent <= ){
+        while(countRequestsSent <= countOfRequestsAllowed){
+        	replyPending = Collections.synchronizedList(new ArrayList<Integer>(){
+        		public synchronized boolean add(int node){
+        			boolean ret = super.add(node);
+        			return ret;
+        		}
+        	});
+        	
         	
         }
 
