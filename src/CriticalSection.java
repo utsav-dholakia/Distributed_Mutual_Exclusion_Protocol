@@ -69,7 +69,14 @@ public class CriticalSection {
 
     public static void executeCriticalSection(BufferedWriter bufferedWriter){
         //Execute critical section logic
-
+    	 Random r = new Random();
+         long waitTime = (long)r.nextGaussian()+meanCSExecTime;		//generate random wait interval between requests
+         try {
+             Thread.sleep(waitTime);		//sleep for random time
+         } catch (InterruptedException e) {
+             // TODO Auto-generated catch block
+             e.printStackTrace();
+         }
         //After task is done
         //Print log of exiting critical section
         Date now = new Date();
