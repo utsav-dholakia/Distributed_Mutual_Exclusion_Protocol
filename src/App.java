@@ -7,9 +7,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class App {
     public static Integer totalNodes;   //Total nodes in topology
     public static Node self;
-    public static Map<Integer, Node> tempMap = new HashMap<Integer, Node>();
-    public static Map<Integer, Node> nodeMap = new HashMap<Integer, Node>();        //Stores my neighbors
+    //public static Map<Integer, Node> tempMap = new HashMap<Integer, Node>();
+    public static Map<Integer, Node> nodeMap = new HashMap<Integer, Node>();        //Stores all nodes
     public static BlockingQueue<Message> messagesToBeProcessed = new LinkedBlockingQueue<Message>();
+    public static ArrayList<Integer> replyPending = new ArrayList<Integer>();		//store list of pending nodes from which reply hasnt been received
+    public static boolean isRequestSent = false;		// keeps track whether current process has sent a request or not
     public static Integer meanInterReqDelay = 0;
     public static Integer meanCSExecTime = 0;
     public static Integer noRequestGenerated = 0;
@@ -80,7 +82,7 @@ public class App {
                                 if (node.getNodeAddr().equals(hostName)) {      //identifying if the node is itself, then storing it in SELF.
                                     self = node;
                                 }
-                                tempMap.put(node.getNodeId(), node);      //temporarily storing all nodes as we are reading config file for buffering.
+                                nodeMap.put(node.getNodeId(), node);      //temporarily storing all nodes as we are reading config file for buffering.
                                 lineCount++;
                             }
                             continue;
@@ -111,7 +113,7 @@ public class App {
             }
         });
 
-        /*Timer timer = new Timer();
+        	Timer timer = new Timer();
             //If the node is co-ordinator node (node 0), then start sending snapshot initiating marker messages to neighbors
             if(self.getNodeId() == 0){
                 TimerTask tasknew = new TimerTask() {
@@ -143,7 +145,7 @@ public class App {
             }
             Random r = new Random();
             double mySample = r.nextGaussian()*desiredStandardDeviation+desiredMean;
-            http://stackoverflow.com/questions/31754209/can-random-nextgaussian-sample-values-from-a-distribution-with-different-mean
-            */
+            //http://stackoverflow.com/questions/31754209/can-random-nextgaussian-sample-values-from-a-distribution-with-different-mean
+            
     }
 }
