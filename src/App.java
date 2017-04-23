@@ -1,13 +1,15 @@
 import java.io.*;
 import java.net.InetAddress;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class App {
     public static Integer totalNodes;   //Total nodes in topology
     public static Node self;
     public static Map<Integer, Node> tempMap = new HashMap<Integer, Node>();
     public static Map<Integer, Node> nodeMap = new HashMap<Integer, Node>();        //Stores my neighbors
-
+    public static BlockingQueue<Message> messagesToBeProcessed = new LinkedBlockingQueue<Message>();
     public static Integer meanInterReqDelay = 0;
     public static Integer meanCSExecTime = 0;
     public static Integer noRequestGenerated = 0;
