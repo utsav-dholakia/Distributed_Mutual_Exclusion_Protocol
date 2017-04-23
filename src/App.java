@@ -99,16 +99,51 @@ public class App {
         }
         queue = new PriorityQueue<RequestObject>(totalNodes, new Comparator<RequestObject> (){
             public int compare(RequestObject lhs, RequestObject rhs) {
-                if(lhs.getTimeStamp() < rhs.getTimeStamp()){
-                    return +1;
+                //Compare clock value and sort requestObjects accordingly
+                int comparedValue = lhs.getTimeStamp().compareTo(rhs.getTimeStamp());
+                if(comparedValue != 0){
+                    return comparedValue;
                 }
-                else if (lhs.getTimeStamp() == rhs.getTimeStamp()){
-                    return 0;
-                }
-                else {
-                    return -1;
+                //Resolve ties with nodeID values
+                else{
+                    return lhs.getNodeId().compareTo(rhs.getNodeId());
                 }
             }
         });
+
+        /*Timer timer = new Timer();
+            //If the node is co-ordinator node (node 0), then start sending snapshot initiating marker messages to neighbors
+            if(self.getNodeId() == 0){
+                TimerTask tasknew = new TimerTask() {
+                    @Override
+                    public void run() {
+                        //Stop initiating snapshots after you sent map protocol termination messages to everyone
+                        while(!App.stopMapProtocolsMessageSent){
+                            if(App.markerMessageSent != null && !App.markerMessageSent.containsKey(snapshotNumber)) {
+                                //Record local state (local vector clock value)
+                                TreeMap<Integer, Integer> channelState = new TreeMap<Integer, Integer>();
+                                for(int node = 0; node < App.totalNodes; node++) {
+                                    channelState.put(node, App.vectorClock.get(node));
+                                }
+                                App.channelStates.add(snapshotNumber, channelState);
+                                System.out.println("Sending marker message with snapshot ID : " + snapshotNumber);
+                                Message outMessage = new Message(MessageType.Marker, 0, null, snapshotNumber);
+                                //Mark that marker message has been sent for this snapshot ID
+                                App.markerMessageSent.put(snapshotNumber, true);
+                                Processor.sendMarkerMessages(outMessage);
+                                snapshotNumber++;
+                            }
+                        }
+                    }
+                };
+                if(!App.stopMapProtocolsMessageSent) {
+                    tasknew.run();
+                    timer.schedule(tasknew, snapshotDelay);
+                }
+            }
+            Random r = new Random();
+            double mySample = r.nextGaussian()*desiredStandardDeviation+desiredMean;
+            http://stackoverflow.com/questions/31754209/can-random-nextgaussian-sample-values-from-a-distribution-with-different-mean
+            */
     }
 }
