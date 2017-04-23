@@ -2,8 +2,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class Listener extends Thread{
     Integer currPortNum;
@@ -24,7 +22,7 @@ public class Listener extends Thread{
                 Socket sock = serverSocket.accept();
                 //System.out.print("Connected, ");
                 //Enter a message that is received into the queue to be processed
-                App.messagesToBeProcessed.put((Message) new ObjectInputStream(sock.getInputStream()).readObject());
+                LamportMutex.messagesToBeProcessed.put((Message) new ObjectInputStream(sock.getInputStream()).readObject());
                 //Initiate thread of a class to process the messages one by one from queue
                 Processor processor = new Processor();
                 //Create a new thread only if no thread exists

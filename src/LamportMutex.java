@@ -1,107 +1,97 @@
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.InputMismatchException;
-import java.util.List;
+import sun.jvmstat.perfdata.monitor.CountedTimerTask;
+
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class LamportMutex {
-    private Node node_ref;
-    List<Message> requestList;
+    public static BlockingQueue<Message> messagesToBeProcessed = new LinkedBlockingQueue<Message>();
+    public static List<Integer> replyPending;		//store list of pending nodes from which reply hasnt been received
+    public static PriorityQueue<RequestObject> requestQueue = new PriorityQueue<RequestObject>(CriticalSection.totalNodes, new Comparator<RequestObject> (){
+        public int compare(RequestObject lhs, RequestObject rhs) {
+            //Compare clock value and sort requestObjects accordingly
+            int comparedValue = lhs.getTimeStamp().compareTo(rhs.getTimeStamp());
+            if(comparedValue != 0){
+                return comparedValue;
+            }
+            //Resolve ties with nodeID values
+            else{
+                return lhs.getNodeId().compareTo(rhs.getNodeId());
+            }
+        }
+    });
+    public static Integer scalarClock = 0;
+    public static boolean isExecutingCS = false;
 
-    private boolean request_made;
-    public List<Integer> pending_replies;
-
-    public LamportMutex(Node n) {
-        node_ref = n;
-        requestList = Collections.synchronizedList(new ArrayList<Message>() {
-            public synchronized boolean add(Message msg) {
-                boolean ret = super.add(msg);
-                Collections.sort(requestList);
+    public static boolean csEnter(){
+        //init reply monitor
+        replyPending = Collections.synchronizedList(new ArrayList<Integer>(){
+            public synchronized boolean add(int node){
+                boolean ret = super.add(node);
                 return ret;
             }
         });
-    }
-
-    public synchronized void queue_request(Message msg) {
-        requestList.add(msg);
-    }
-
-    public synchronized void release_request(Message msg) {
-        int pid = msg.getSender();
-        /* the first msg in the list should be the one
-           to be released. otherwise something is wrong
-         */
-        if (requestList.get(0).getSender() == pid) {
-            requestList.remove(0);
+        for(int i=0; i< CriticalSection.totalNodes ; i++){
+            replyPending.add(i);
         }
-        else {
-            //System.err.println("release message wasn't from the process first in the queue");
+        replyPending.remove(CriticalSection.self.getNodeId());
+        //end initialization of reply monitor
+
+        CriticalSection.isRequestSent = true;
+        scalarClock++;
+        Message request = new Message(MessageType.Request,CriticalSection.self.getNodeId(),scalarClock);
+        messagesToBeProcessed.add(request);
+
+        Iterator<Integer> iterator = CriticalSection.nodeMap.keySet().iterator();
+        try{
+            while (iterator.hasNext()) {
+                Node node = CriticalSection.nodeMap.get(iterator.next());
+                Socket socket = new Socket(node.getNodeAddr(), node.getPort());
+                ObjectOutputStream outMessage = new ObjectOutputStream(socket.getOutputStream());
+                outMessage.writeObject(request);
+                socket.close();
+            }
+        }catch(Exception e){
+            System.out.println("Exception in sending release message");
+            e.printStackTrace();
         }
-    }
 
-    public synchronized void release_request() {
-        /*
-        this is called when the local node
-        is done executing crit section
-         */
-        request_made = false;
-        requestList.remove(0);
-    }
-
-
-    public synchronized boolean request_crit_section() {
-        /* on true, node can enter the crit section,
-           on false node can not. and then node blocks exec
-           till it gets critical section.
-        */
-        if (!request_made) {
-            request_made = true;
-            pending_replies = new ArrayList<>(node_ref.other_pids);
-            /*
-            we need our data structures prepared before we start getting
-            replies from other nodes!,
-            so once that is done, multicast request.
-             */
-            node_ref.multicast("request");
-        }
-        if(requestList.get(0).getSender() == node_ref.getPid()) {
-            /* we're highest priority!, now wait for all replies */
-            if (pending_replies.isEmpty()) {
-                /*
-                Go ahead! execute critical section
-                after you're done, call release_request with no arguments
-                 */
-                return true;
+        //Block enterCS function till isExecutingCS is not marked as true
+        while(true){
+            if(isExecutingCS) {
+                break;
             }
         }
-        return false;
+        return true;
     }
 
-    public synchronized void reply_request(Message msg) {
-        if(request_made) {
-            System.out.println("pending replies: "+pending_replies);
-            System.out.println("request queue:"+requestList);
-            pending_replies.remove(new Integer(msg.getSender()));
-        }
-        else {
-            //System.err.println("got reply but we don't have a pending request, something is wrong");
-        }
+
+    public static void csExit(){
+        isExecutingCS = false;
+        //Execute critical section exit logic
+        sendReleaseMessage();
     }
 
-    public static void main(String[] args) {
-
-        Message m1 = new Message.MessageBuilder()
-                .clock(6).build();
-        Message m2 = new Message.MessageBuilder()
-                .clock(2).build();
-        Message m3 = new Message.MessageBuilder()
-                .clock(5).from(0).build();
-        LamportMutex mutex = new LamportMutex();
-        mutex.requestList.add(m1);
-        mutex.requestList.add(m2);
-        mutex.requestList.add(m3);
-        mutex.requestList.remove(m2);
-        for(Message m:mutex.requestList) {
-            System.out.println(m.getClock());
+    public static void sendReleaseMessage() {
+        CriticalSection.isRequestSent = false;
+        //Increment clock value
+        LamportMutex.scalarClock = LamportMutex.scalarClock + 1;
+        //Generate release message
+        Message releaseMessage = new Message(MessageType.Release, CriticalSection.self.getNodeId(), LamportMutex.scalarClock);
+        Iterator<Integer> iterator = CriticalSection.nodeMap.keySet().iterator();
+        try{
+            while (iterator.hasNext()) {
+                Node node = CriticalSection.nodeMap.get(iterator.next());
+                Socket socket = new Socket(node.getNodeAddr(), node.getPort());
+                ObjectOutputStream outMessage = new ObjectOutputStream(socket.getOutputStream());
+                outMessage.writeObject(releaseMessage);
+                socket.close();
+            }
+        }catch(Exception e){
+            System.out.println("Exception in sending release message");
+            e.printStackTrace();
         }
     }
 
