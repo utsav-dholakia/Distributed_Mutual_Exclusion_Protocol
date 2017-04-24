@@ -1,3 +1,5 @@
+import java.util.Comparator;
+
 public class RequestObject {
     Integer timeStamp;
     Integer nodeId;
@@ -22,5 +24,28 @@ public class RequestObject {
 
     public void setNodeId(Integer nodeId) {
         this.nodeId = nodeId;
+    }
+}
+
+class ComparatorForQueue implements Comparator<RequestObject> {
+    @Override
+    public int compare(RequestObject t1, RequestObject requestObject) {
+        if(requestObject.getTimeStamp() < t1.getTimeStamp()){
+            return -1;
+        }
+        else if(requestObject.getTimeStamp() > t1.getTimeStamp()){
+            return +1;
+        }
+        else{
+            if(requestObject.getNodeId() < t1.getNodeId()){
+                return -1;
+            }
+            else if(requestObject.getNodeId() > t1.getNodeId()){
+                return +1;
+            }
+            else {
+                return 0;
+            }
+        }
     }
 }

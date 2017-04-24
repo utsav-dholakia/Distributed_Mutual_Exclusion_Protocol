@@ -21,6 +21,7 @@ public class CriticalSection {
     public static volatile boolean enterCriticalSection = false;
     public static Date now = new Date();
     public static DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    public static Listener listener;
 
     public static void main(String args[]){
         //Do local configuration of node
@@ -42,6 +43,7 @@ public class CriticalSection {
                     e.printStackTrace();
                 }
                 if(!isRequestSent){		//if no request message has been sent, then send one
+                    countRequestsSent++;
                     //Request to enter criticalSection
                     enterCriticalSection = LamportMutex.csEnter();
                     if(enterCriticalSection){
@@ -56,7 +58,8 @@ public class CriticalSection {
                 }
 
             }
-
+            //Thread.sleep(15000);
+            //listener.stopListener();
             bufferedWriter.close();
             fileWriter.close();
         } catch (FileNotFoundException e) {
@@ -68,6 +71,7 @@ public class CriticalSection {
     }
 
     public static void executeCriticalSection(BufferedWriter bufferedWriter){
+        System.out.println("Executing critical section");
         //Execute critical section logic
     	 Random r = new Random();
          long waitTime = (long)r.nextGaussian()+meanCSExecTime;		//generate random wait interval between requests
@@ -176,7 +180,7 @@ public class CriticalSection {
         }
 
         //Listener(Server) class initiated
-        Listener listener = new Listener(self.getPort());
+        listener = new Listener(self.getPort());
         Thread listenerThread = new Thread(listener, "Listener Thread");
         listenerThread.start();
 

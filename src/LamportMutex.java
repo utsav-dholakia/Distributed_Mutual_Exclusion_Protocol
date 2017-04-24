@@ -7,23 +7,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class LamportMutex {
-    public static BlockingQueue<Message> messagesToBeProcessed = new LinkedBlockingQueue<Message>();
-    public static List<Integer> replyPending;		//store list of pending nodes from which reply hasnt been received
-    public static PriorityQueue<RequestObject> requestQueue = new PriorityQueue<RequestObject>(CriticalSection.totalNodes, new Comparator<RequestObject> (){
-        public int compare(RequestObject lhs, RequestObject rhs) {
-            //Compare clock value and sort requestObjects accordingly
-            int comparedValue = lhs.getTimeStamp().compareTo(rhs.getTimeStamp());
-            if(comparedValue != 0){
-                return comparedValue;
-            }
-            //Resolve ties with nodeID values
-            else{
-                return lhs.getNodeId().compareTo(rhs.getNodeId());
-            }
-        }
-    });
-    public static Integer scalarClock = 0;
-    public static boolean isExecutingCS = false;
+    public static volatile BlockingQueue<Message> messagesToBeProcessed = new LinkedBlockingQueue<Message>();
+    public static volatile List<Integer> replyPending;		//store list of pending nodes from which reply hasnt been received
+    public static volatile Comparator<RequestObject> comparatorForQueue = new ComparatorForQueue ();
+    public static volatile PriorityQueue<RequestObject> requestQueue = new PriorityQueue<RequestObject>(CriticalSection.totalNodes, comparatorForQueue);
+    public static volatile Integer scalarClock = 0;
+    public static volatile boolean isExecutingCS = false;
 
     public static boolean csEnter(){
         //init reply monitor
@@ -59,10 +48,12 @@ public class LamportMutex {
                 socket.close();
             }
         }catch(Exception e){
-            System.out.println("Exception in sending release message");
+            CriticalSection.isRequestSent = false;
+            System.out.println("Exception in sending request message");
             e.printStackTrace();
+            return false;
         }
-
+        System.out.println("Request message sent to all neighbours at time - " + LamportMutex.scalarClock + " request Number - " + CriticalSection.countRequestsSent);
         //Block enterCS function till isExecutingCS is not marked as true
         while(true){
             if(isExecutingCS) {
@@ -76,6 +67,8 @@ public class LamportMutex {
     public static void csExit(){
         //Mark isExecutingCS as false,
         isExecutingCS = false;
+        //Remove yourself from requestQueue
+        LamportMutex.requestQueue.poll();
         //Critical section entry request is not sent
         CriticalSection.isRequestSent = false;
         //Send release message to all nodes
@@ -100,6 +93,8 @@ public class LamportMutex {
             System.out.println("Exception in sending release message");
             e.printStackTrace();
         }
+
+        System.out.println("Release message sent to all neighbours");
     }
 
 }

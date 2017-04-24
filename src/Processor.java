@@ -1,5 +1,6 @@
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.PriorityQueue;
 
 public class Processor extends Thread{
 
@@ -7,7 +8,7 @@ public class Processor extends Thread{
     public void run() {
         try {
                 Message inMessage = LamportMutex.messagesToBeProcessed.take();
-
+                System.out.println("Message - " + inMessage.getMessageType() + " from node - " + inMessage.getSrcNodeID() + " at time - " + inMessage.getTimeStamp());
                 switch(inMessage.getMessageType()) {
                     case Request:
                         updateClockValue(inMessage);
@@ -15,6 +16,7 @@ public class Processor extends Thread{
                         RequestObject requestObject = new RequestObject(inMessage.getTimeStamp(),
                                                                         inMessage.getSrcNodeID());
                         LamportMutex.requestQueue.add(requestObject);
+                        PriorityQueue<RequestObject> traceQueue = LamportMutex.requestQueue;
                         //Send reply to go ahead with execution to the object at the head of priority queue
                         sendReplyMessage(inMessage);
                         break;
@@ -39,7 +41,22 @@ public class Processor extends Thread{
                         updateClockValue(inMessage);
                         //If the head of request queue is the same as the node which sent release message
                         if(LamportMutex.requestQueue.peek().getNodeId() == inMessage.getSrcNodeID()){
-                            LamportMutex.requestQueue.remove();
+                            System.out.println("Released request of node - " + LamportMutex.requestQueue.peek().getNodeId());
+                            LamportMutex.requestQueue.poll();
+                        }
+                        //If all neighbours have replied
+                        if(LamportMutex.replyPending != null) {
+                            //Reply received from a neighbour, remove it from reply pending list
+                            if (LamportMutex.replyPending.contains(inMessage.getSrcNodeID())) {
+                                LamportMutex.replyPending.remove(inMessage.getSrcNodeID());
+                            }
+                            if (LamportMutex.replyPending.size() == 0) {
+                                //If node is at the head of priority queue
+                                if (LamportMutex.requestQueue.peek().getNodeId() == CriticalSection.self.getNodeId()) {
+                                    //Enter critical section, L1,L2 conditions are true
+                                    LamportMutex.isExecutingCS = true;
+                                }
+                            }
                         }
                         break;
                     default:
@@ -60,6 +77,9 @@ public class Processor extends Thread{
     }
 
     public static void sendReplyMessage(Message inMessage) {
+        //Update scalar clock to mark a send event
+        LamportMutex.scalarClock = LamportMutex.scalarClock + 1;
+        System.out.println("Sending reply from node - " + CriticalSection.self.getNodeId() + " at time - " + LamportMutex.scalarClock);
         Message replyMessage = new Message(MessageType.Reply, CriticalSection.self.getNodeId(), LamportMutex.scalarClock);	//control msg to 0 saying I am permanently passive
         try{
             Socket socket = new Socket(CriticalSection.nodeMap.get(inMessage.getSrcNodeID()).getNodeAddr(), CriticalSection.nodeMap.get(inMessage.getSrcNodeID()).getPort());
