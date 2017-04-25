@@ -41,8 +41,6 @@ public class Processor extends Thread{
                             if(obj.getNodeId().equals(inMessage.getSrcNodeID())){
                                 LamportMutex.requestQueue.remove(obj);
                                 System.out.println("Released request of node - " + obj.getNodeId());
-                                CriticalSection.bufferedWriter.write("\nRELEASE CS BY - " + inMessage.getSrcNodeID() + " AT TIME - " + inMessage.getTimeStamp());
-                                CriticalSection.bufferedWriter.flush();
                                 break;
                             }
                         }
