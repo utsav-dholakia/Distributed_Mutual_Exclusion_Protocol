@@ -1,5 +1,8 @@
 import sun.jvmstat.perfdata.monitor.CountedTimerTask;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.*;
@@ -10,7 +13,7 @@ public class LamportMutex {
     public static volatile BlockingQueue<Message> messagesToBeProcessed = new LinkedBlockingQueue<Message>();
     public static volatile List<Integer> replyPending;		//store list of pending nodes from which reply hasnt been received
     public static volatile Comparator<RequestObject> comparatorForQueue = new ComparatorForQueue ();
-    public static volatile PriorityQueue<RequestObject> requestQueue = new PriorityQueue<RequestObject>(CriticalSection.totalNodes, comparatorForQueue);
+    public static volatile PriorityQueue<RequestObject> requestQueue = new PriorityQueue<RequestObject>(50, comparatorForQueue);
     public static volatile Integer scalarClock = 0;
     public static volatile boolean isExecutingCS = false;
 
@@ -22,10 +25,11 @@ public class LamportMutex {
                 return ret;
             }
         });
-        for(int i=0; i< CriticalSection.totalNodes ; i++){
-            replyPending.add(i);
+        Iterator<Integer> itr = CriticalSection.nodeMap.keySet().iterator();
+        while(itr.hasNext()){
+            replyPending.add(itr.next());
         }
-        replyPending.remove(CriticalSection.self.getNodeId());
+        //replyPending.remove(CriticalSection.self.getNodeId());
         //end initialization of reply monitor
 
         //Critical section entry request sent
@@ -53,10 +57,16 @@ public class LamportMutex {
             e.printStackTrace();
             return false;
         }
-        System.out.println("Request message sent to all neighbours at time - " + LamportMutex.scalarClock + " request Number - " + CriticalSection.countRequestsSent);
+        System.out.println("Sending Request time - " + LamportMutex.scalarClock + " request Number - " + CriticalSection.countRequestsSent);
         //Block enterCS function till isExecutingCS is not marked as true
         while(true){
             if(isExecutingCS) {
+                try {
+                    CriticalSection.bufferedWriter.write("\n STARTING CS BY - " + CriticalSection.self.getNodeId() + " AT TIME - " + LamportMutex.scalarClock);
+                    CriticalSection.bufferedWriter.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 break;
             }
         }
@@ -76,12 +86,14 @@ public class LamportMutex {
     }
 
     public static void sendReleaseMessage() {
-        //Increment clock value
-        LamportMutex.scalarClock = LamportMutex.scalarClock + 1;
-        //Generate release message
-        Message releaseMessage = new Message(MessageType.Release, CriticalSection.self.getNodeId(), LamportMutex.scalarClock);
-        Iterator<Integer> iterator = CriticalSection.nodeMap.keySet().iterator();
         try{
+            //Increment clock value
+            LamportMutex.scalarClock = LamportMutex.scalarClock + 1;
+            CriticalSection.bufferedWriter.write("\nRELEASE CS BY - " + CriticalSection.self.getNodeId() + " AT TIME - " + LamportMutex.scalarClock);
+            CriticalSection.bufferedWriter.flush();
+            //Generate release message
+            Message releaseMessage = new Message(MessageType.Release, CriticalSection.self.getNodeId(), LamportMutex.scalarClock);
+            Iterator<Integer> iterator = CriticalSection.nodeMap.keySet().iterator();
             while (iterator.hasNext()) {
                 Node node = CriticalSection.nodeMap.get(iterator.next());
                 Socket socket = new Socket(node.getNodeAddr(), node.getPort());

@@ -1,3 +1,5 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.ServerSocket;
@@ -15,6 +17,8 @@ public class Listener extends Thread{
     @Override
     public void run() {
         try{
+            CriticalSection.fileWriter = new FileWriter("log-" + CriticalSection.self.getNodeId() + ".txt", true);
+            CriticalSection.bufferedWriter = new BufferedWriter(CriticalSection.fileWriter);
             //Initialize the receiver as a continuous listening server
             serverSocket = new ServerSocket(currPortNum);
             System.out.println("Listening on port : " + currPortNum);
@@ -27,9 +31,12 @@ public class Listener extends Thread{
                 Processor processor = new Processor();
                 //Create a new thread only if no thread exists
                 if(!processor.isAlive()){
+                    //System.out.println("PROCESSOR PROCESSOR PROCESSOR START START START");
                     new Thread(processor).start();
                 }
             }
+            CriticalSection.bufferedWriter.close();
+            CriticalSection.fileWriter.close();
         } catch(Exception e){
             serverOn = false;
             //
