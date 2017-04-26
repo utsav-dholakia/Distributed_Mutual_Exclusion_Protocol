@@ -62,7 +62,7 @@ public class LamportMutex {
         while(true){
             if(isExecutingCS) {
                 try {
-                    CriticalSection.bufferedWriter.write("\n" + CriticalSection.self.getNodeId() +  " : START - " + LamportMutex.scalarClock);
+                    CriticalSection.bufferedWriter.write("\n" + CriticalSection.self.getNodeId() +  "   START   " + LamportMutex.scalarClock);
                     CriticalSection.bufferedWriter.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -89,7 +89,7 @@ public class LamportMutex {
         try{
             //Increment clock value
             LamportMutex.scalarClock = LamportMutex.scalarClock + 1;
-            CriticalSection.bufferedWriter.write("\n" + CriticalSection.self.getNodeId()  + " : RELEASE - " + LamportMutex.scalarClock);
+            CriticalSection.bufferedWriter.write("\n" + CriticalSection.self.getNodeId()  + "   RELEASE    " + LamportMutex.scalarClock);
             CriticalSection.bufferedWriter.flush();
             //Generate release message
             Message releaseMessage = new Message(MessageType.Release, CriticalSection.self.getNodeId(), LamportMutex.scalarClock);
